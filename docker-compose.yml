@@ -1,0 +1,83 @@
+version: '3'
+
+services:
+  redis:
+    image: redis:7.2-alpine3.18
+    container_name: redis-srv
+    ports:
+      - 6379:6379
+
+  redis-commander:
+    container_name: redis-commander-web
+    hostname: redis-commander
+    image: rediscommander/redis-commander:latest
+    restart: always
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - 8081:8081
+
+  consumer_one:
+    container_name: go-consumer-one
+    build:
+      dockerfile: ./Dockerfile.consumer
+      context: .
+    environment:
+      APP_ENV: docker
+      APP_VERSION: 1.0.0
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      STREAM: events
+      STREAM_GROUP: GroupOne
+    depends_on:
+      - redis
+    restart: always
+
+  consumer_two:
+    container_name: go-consumer-two
+    build:
+      dockerfile: ./Dockerfile.consumer
+      context: .
+    environment:
+      APP_ENV: docker
+      APP_VERSION: 1.0.0
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      STREAM: events
+      STREAM_GROUP: GroupTwo
+    depends_on:
+      - redis
+    restart: always
+
+  consumer_three:
+    container_name: go-consumer-three
+    build:
+      dockerfile: ./Dockerfile.consumer
+      context: .
+    environment:
+      APP_ENV: docker
+      APP_VERSION: 1.0.0
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      STREAM: events
+      STREAM_GROUP: GroupTwo
+    depends_on:
+      - redis
+    restart: always
+
+  producer:
+    container_name: go-producer
+    build:
+      dockerfile: ./Dockerfile.producer
+      context: .
+    environment:
+      APP_ENV: docker
+      APP_VERSION: 1.0.0
+      STREAM: events
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      - consumer_one
+      - consumer_two
+      - consumer_three
+    restart: no
