@@ -12,22 +12,24 @@ type Config struct {
 	AppEnv     string `env:"APP_ENV"`
 	AppVersion string `env:"APP_VERSION"`
 
+	LogLevel string `env:"LOG_LEVEL"`
+
 	RedisHost string `env:"REDIS_HOST"`
 	RedisPort string `env:"REDIS_PORT"`
 
-	Stream      string `env:"STREAM"`
-	StreamGroup string `env:"STREAM_GROUP"`
+	ConsumerGroup string `env:"CONSUMER_GROUP"`
 }
 
 func LoadEnvConfig() Config {
 	goDotEnvVariableString("APP_ENV")
 	goDotEnvVariableString("APP_VERSION")
 
+	goDotEnvVariableString("LOG_LEVEL")
+
 	goDotEnvVariableString("REDIS_HOST")
 	goDotEnvVariableString("REDIS_PORT")
 
-	goDotEnvVariableString("STREAM")
-	goDotEnvVariableString("STREAM_GROUP")
+	goDotEnvVariableString("CONSUMER_GROUP")
 
 	return buildConfig()
 }

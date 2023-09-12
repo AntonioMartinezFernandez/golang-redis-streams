@@ -70,8 +70,8 @@ Start consumer
 make consumer
 ```
 
-Start producer
+Start publisher
 
 ```
-make producer
+make publisher
 ```
