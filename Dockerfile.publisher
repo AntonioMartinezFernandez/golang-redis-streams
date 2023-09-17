@@ -6,7 +6,7 @@ WORKDIR $GOPATH/src
 COPY . $GOPATH/src
 
 RUN go get -d -v golang.org/x/net/html
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o app cmd/producer/*.go
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o app cmd/publisher/*.go
 
 
 FROM alpine:3.18
