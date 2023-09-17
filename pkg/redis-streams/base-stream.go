@@ -11,8 +11,6 @@ import (
 	utils "github.com/AntonioMartinezFernandez/golang-redis-streams/pkg/utils"
 )
 
-type BaseStreamHandler func(e BaseStream) error
-
 type BaseStream struct {
 	BaseStreamId       string    `json:"base_stream_id"`
 	BaseStreamType     string    `json:"base_stream_type"`

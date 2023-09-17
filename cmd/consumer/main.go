@@ -45,29 +45,29 @@ func init() {
 }
 
 func main() {
-	// Init Redis Stream consumer for Comments
+	// Init Redis Stream consumer for CommentCreated streams
 	commentCreatedStreamName := comment_application.CommentCreatedStreamType
-	comments_rsc := redis_streams.NewRedisStreamsConsumer(ctx, &wg, logger, client, consumerGroup, commentCreatedStreamName)
-	comments_rsc.RegisterSubscriber(comment_application.NewSaveCommentOnCommentCreated())
-	comments_rsc.CreateConsumerGroup()
-	go comments_rsc.Start()
-	go comments_rsc.StartPendingMessagesConsumer(60)
+	comment_created_rsc := redis_streams.NewRedisStreamsConsumer(ctx, &wg, logger, client, consumerGroup, commentCreatedStreamName)
+	comment_created_rsc.RegisterSubscriber(comment_application.NewSaveCommentOnCommentCreated())
+	comment_created_rsc.CreateConsumerGroup()
+	go comment_created_rsc.Start()
+	go comment_created_rsc.StartPendingMessagesConsumer(60)
 
-	// Init Redis Stream consumer for Likes
+	// Init Redis Stream consumer for LikeCreated streams
 	likeCreatedStreamName := like_application.LikeCreatedStreamType
-	likes_rsc := redis_streams.NewRedisStreamsConsumer(ctx, &wg, logger, client, consumerGroup, likeCreatedStreamName)
-	likes_rsc.RegisterSubscriber(like_application.NewSaveLikeOnLikeCreated())
-	likes_rsc.CreateConsumerGroup()
-	go likes_rsc.Start()
-	go likes_rsc.StartPendingMessagesConsumer(60)
+	like_created_rsc := redis_streams.NewRedisStreamsConsumer(ctx, &wg, logger, client, consumerGroup, likeCreatedStreamName)
+	like_created_rsc.RegisterSubscriber(like_application.NewSaveLikeOnLikeCreated())
+	like_created_rsc.CreateConsumerGroup()
+	go like_created_rsc.Start()
+	go like_created_rsc.StartPendingMessagesConsumer(60)
 
 	//Gracefully shutdown
 	chanOS := make(chan os.Signal, 1)
 	signal.Notify(chanOS, syscall.SIGINT, syscall.SIGTERM)
 
 	<-chanOS
-	comments_rsc.Stop()
-	// likes_rsc.Stop()
+	comment_created_rsc.Stop()
+	like_created_rsc.Stop()
 
 	wg.Wait()
 	client.Close()

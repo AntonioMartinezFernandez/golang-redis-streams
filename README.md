@@ -2,6 +2,8 @@
 
 Demo using messaging with Redis Streams in Golang
 
+![Benchmark](/assets/benchmark.png)
+
 **Using messaging in practice with Redis streams and Golang**
 
 # Redis
@@ -13,7 +15,7 @@ Redis has strategies for storing data in memory and on disc, guaranteeing fast r
 
 # Redis Streams for Messaging
 
-![Design of flow](/assets/redis-streams-flow.png)
+![Redis Streams Flow](/assets/redis-streams-flow.png)
 
 **Positive Points**
 

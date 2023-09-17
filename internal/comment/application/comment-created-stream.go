@@ -9,6 +9,8 @@ import (
 	redis_streams "github.com/AntonioMartinezFernandez/golang-redis-streams/pkg/redis-streams"
 )
 
+var _ redis_streams.StreamToPublish = (*CommentCreatedStream)(nil)
+
 const CommentCreatedStreamType string = "CommentCreated"
 
 type CommentCreatedStream struct {

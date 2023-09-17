@@ -3,7 +3,7 @@ package utils
 import "math/rand"
 
 func RandomHello() string {
-	greeting := []string{
+	return []string{
 		"Hola redis streams!",
 		"Kaixo redis streams!",
 		"Hi redis streams!",
@@ -15,6 +15,4 @@ func RandomHello() string {
 		"Cześć redis streams!",
 		"Nǐ hǎo redis streams!",
 	}[rand.Intn(10)]
-
-	return greeting
 }

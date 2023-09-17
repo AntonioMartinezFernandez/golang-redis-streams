@@ -16,11 +16,11 @@ func NewSaveLikeOnLikeCreated() *SaveLikeOnLikeCreated {
 	return &SaveLikeOnLikeCreated{}
 }
 
-func (scocc *SaveLikeOnLikeCreated) MessageTypeName() string {
+func (slolc *SaveLikeOnLikeCreated) MessageTypeName() string {
 	return LikeCreatedStreamType
 }
 
-func (scocc *SaveLikeOnLikeCreated) NewFromMap(eventAsMap map[string]interface{}) interface{} {
+func (slolc *SaveLikeOnLikeCreated) NewStreamEventFromMap(eventAsMap map[string]interface{}) redis_streams.StreamToPublish {
 	likeCreated, err := NewLikeCreatedStreamFromMap(eventAsMap)
 	if err != nil {
 		return nil
@@ -28,13 +28,13 @@ func (scocc *SaveLikeOnLikeCreated) NewFromMap(eventAsMap map[string]interface{}
 	return likeCreated
 }
 
-func (scocc *SaveLikeOnLikeCreated) Handle(event interface{}) error {
+func (slolc *SaveLikeOnLikeCreated) Handle(event interface{}) error {
 	likeCreated, ok := event.(*LikeCreatedStream)
 	if !ok {
 		return errors.New("event cannot be casted as LikeCreatedStream")
 	}
 
-	fmt.Println("Running SaveLikeOnLikeCreated handler for comment with id", likeCreated.Id)
+	fmt.Println("Running SaveLikeOnLikeCreated handler for like with id", likeCreated.Id)
 
 	return nil
 }

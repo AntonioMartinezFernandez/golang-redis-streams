@@ -20,7 +20,7 @@ func (scocc *SaveCommentOnCommentCreated) MessageTypeName() string {
 	return CommentCreatedStreamType
 }
 
-func (scocc *SaveCommentOnCommentCreated) NewFromMap(eventAsMap map[string]interface{}) interface{} {
+func (scocc *SaveCommentOnCommentCreated) NewStreamEventFromMap(eventAsMap map[string]interface{}) redis_streams.StreamToPublish {
 	commentCreated, err := NewCommentCreatedStreamFromMap(eventAsMap)
 	if err != nil {
 		return nil

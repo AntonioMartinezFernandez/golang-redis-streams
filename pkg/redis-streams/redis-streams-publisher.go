@@ -10,7 +10,7 @@ import (
 var _ Publisher = (*RedisStreamsPublisher)(nil)
 
 type Publisher interface {
-	Publish(streamName string, event map[string]interface{}) error
+	Publish(streamName string, event StreamToPublish) error
 }
 
 type RedisStreamsPublisher struct {
@@ -31,10 +31,12 @@ func NewRedisStreamsPublisher(
 	}
 }
 
-func (rse *RedisStreamsPublisher) Publish(streamName string, event map[string]interface{}) error {
+func (rse *RedisStreamsPublisher) Publish(streamName string, event StreamToPublish) error {
+	eventAsMap := event.AsMap()
+
 	timestampId, err := rse.client.XAdd(rse.ctx, &redis.XAddArgs{
 		Stream: streamName,
-		Values: event,
+		Values: eventAsMap,
 	}).Result()
 
 	if err != nil {
