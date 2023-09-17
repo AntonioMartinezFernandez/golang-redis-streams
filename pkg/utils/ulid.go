@@ -9,7 +9,7 @@ import (
 
 func NewUlid() string {
 	entropy := rand.New(rand.NewSource(time.Now().UnixNano()))
-	ms := ulid.Timestamp(time.Now())
-	newUlid, _ := ulid.New(ms, entropy)
+	timestamp := ulid.Timestamp(time.Now())
+	newUlid, _ := ulid.New(timestamp, entropy)
 	return newUlid.String()
 }

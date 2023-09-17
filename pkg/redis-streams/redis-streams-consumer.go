@@ -192,8 +192,8 @@ func (rsc *RedisStreamsConsumer) processMessage(msg redis.XMessage) error {
 
 	for _, subscriber := range rsc.subscribers {
 		if subscriber.MessageTypeName() == msgType {
-			evt := subscriber.NewFromMap(msg.Values)
-			err := subscriber.Handle(evt)
+			streamEvent := subscriber.NewStreamEventFromMap(msg.Values)
+			err := subscriber.Handle(streamEvent)
 			if err != nil {
 				return err
 			}

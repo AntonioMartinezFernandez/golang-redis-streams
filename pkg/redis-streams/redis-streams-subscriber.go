@@ -2,6 +2,6 @@ package redis_streams
 
 type RedisStreamsSubscriber interface {
 	MessageTypeName() string
-	NewFromMap(map[string]interface{}) interface{}
+	NewStreamEventFromMap(map[string]interface{}) StreamToPublish
 	Handle(e interface{}) error
 }

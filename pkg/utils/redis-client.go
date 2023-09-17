@@ -7,7 +7,6 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// Create a new instace of Redis client
 func NewRedisClient(host string, port string) (*redis.Client, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%s", host, port),
@@ -17,5 +16,4 @@ func NewRedisClient(host string, port string) (*redis.Client, error) {
 
 	_, err := client.Ping(context.Background()).Result()
 	return client, err
-
 }

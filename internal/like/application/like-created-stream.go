@@ -9,6 +9,8 @@ import (
 	redis_streams "github.com/AntonioMartinezFernandez/golang-redis-streams/pkg/redis-streams"
 )
 
+var _ redis_streams.StreamToPublish = (*LikeCreatedStream)(nil)
+
 const LikeCreatedStreamType string = "LikeCreated"
 
 type LikeCreatedStream struct {
@@ -40,8 +42,8 @@ func NewLikeCreatedStreamFromMap(stream map[string]interface{}) (*LikeCreatedStr
 	return NewLikeCreatedStream(newLike), nil
 }
 
-func (cce LikeCreatedStream) AsMap() map[string]interface{} {
-	binaryElem, _ := json.Marshal(cce)
+func (lce LikeCreatedStream) AsMap() map[string]interface{} {
+	binaryElem, _ := json.Marshal(lce)
 	var mapElem map[string]interface{}
 	json.Unmarshal(binaryElem, &mapElem)
 	return mapElem

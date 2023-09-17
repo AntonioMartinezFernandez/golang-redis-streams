@@ -50,18 +50,18 @@ func NewFromMap(e map[string]interface{}) (*Like, error) {
 	return NewLike(id, userId, commentId, createdAtAsTime)
 }
 
-func (c *Like) GetId() string {
-	return c.id
+func (l *Like) GetId() string {
+	return l.id
 }
 
-func (c *Like) GetUserId() string {
-	return c.userId
+func (l *Like) GetUserId() string {
+	return l.userId
 }
 
-func (c *Like) GetCommentId() string {
-	return c.commentId
+func (l *Like) GetCommentId() string {
+	return l.commentId
 }
 
-func (c *Like) GetCreatedAt() time.Time {
-	return c.createdAt
+func (l *Like) GetCreatedAt() time.Time {
+	return l.createdAt
 }

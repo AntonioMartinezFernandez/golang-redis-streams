@@ -33,28 +33,27 @@ func init() {
 }
 
 func main() {
-	streamsToPublishByType := 1
+	startTime := time.Now()
 	commentIds := []string{}
+	streamsToPublishByType := 500000
 
-	// Publish "CommentCreated" events
+	// Publish CommentCreated streams
 	for i := 1; i <= streamsToPublishByType; i++ {
 		comment, _ := comment_domain.NewComment(utils.NewUuid(), fmt.Sprint(i), utils.RandomHello(), time.Now())
 		commentCreatedStream := comment_application.NewCommentCreatedStream(comment)
-		_ = redisStreamsPublisher.Publish(commentCreatedStream.GetBaseStreamType(), commentCreatedStream.AsMap())
+		_ = redisStreamsPublisher.Publish(commentCreatedStream.GetBaseStreamType(), commentCreatedStream)
 
 		commentIds = append(commentIds, comment.GetId())
 	}
 
-	// Publish "LikeCreated" events
+	// Publish LikeCreated streams
 	for i := 1; i <= streamsToPublishByType; i++ {
 		like, _ := like_domain.NewLike(utils.NewUuid(), fmt.Sprint(i), commentIds[i-1], time.Now())
 		likeCreatedStream := like_application.NewLikeCreatedStream(like)
-		_ = redisStreamsPublisher.Publish(likeCreatedStream.GetBaseStreamType(), likeCreatedStream.AsMap())
+		_ = redisStreamsPublisher.Publish(likeCreatedStream.GetBaseStreamType(), likeCreatedStream)
 	}
 
-	// Publish invalid events
-	redisStreamsPublisher.Publish("CommentCreated", map[string]interface{}{"hi": "ho"})
-	redisStreamsPublisher.Publish("LikeCreated", map[string]interface{}{"hi": "ho"})
+	fmt.Printf("Published %d streams in %s\n", streamsToPublishByType*2, time.Since(startTime))
 }
 
 func InitDependencies() {
