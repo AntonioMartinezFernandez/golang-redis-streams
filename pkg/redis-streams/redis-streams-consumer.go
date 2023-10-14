@@ -16,6 +16,7 @@ import (
 )
 
 const START string = ">"
+const MAX_PROCESS_RETRIES int = 10
 
 var _ Consumer = (*RedisStreamsConsumer)(nil)
 
@@ -129,7 +130,7 @@ func (rsc *RedisStreamsConsumer) StartPendingMessagesConsumer(timePeriodInSecond
 func (rsc *RedisStreamsConsumer) consumePendingMessages() {
 	rsc.logger.Debug("processing pending redis streams messages...", "time", time.Now().Format(time.RFC3339))
 
-	var pendingMessages []string
+	var pendingMessagesIds []string
 	pendingMessagesToProcess, err := rsc.client.XPendingExt(rsc.ctx, &redis.XPendingExtArgs{
 		Stream: rsc.streamName,
 		Group:  rsc.consumerGroup,
@@ -143,15 +144,15 @@ func (rsc *RedisStreamsConsumer) consumePendingMessages() {
 	}
 
 	for _, message := range pendingMessagesToProcess {
-		pendingMessages = append(pendingMessages, message.ID)
+		pendingMessagesIds = append(pendingMessagesIds, message.ID)
 	}
 
-	if len(pendingMessages) > 0 {
+	if len(pendingMessagesIds) > 0 {
 		messages, err := rsc.client.XClaim(rsc.ctx, &redis.XClaimArgs{
 			Stream:   rsc.streamName,
 			Group:    rsc.consumerGroup,
 			Consumer: rsc.consumerName,
-			Messages: pendingMessages,
+			Messages: pendingMessagesIds,
 			MinIdle:  30 * time.Second,
 		}).Result()
 
@@ -172,6 +173,18 @@ func (rsc *RedisStreamsConsumer) processMessage(message redis.XMessage) {
 	defer rsc.wg.Done()
 
 	err := rsc.handleMessage(message)
+
+	// Backoff policy
+	retries := 0
+	for err != nil && retries < MAX_PROCESS_RETRIES {
+		rsc.logger.Warn("retrying failed process redis streams message", "stream", rsc.streamName, "consumer group", rsc.consumerGroup, "consumer name", rsc.consumerName, "message", message, "error", err, "retry", retries)
+		retries++
+
+		<-time.After(time.Duration(500*retries) * time.Millisecond)
+		err = rsc.handleMessage(message)
+	}
+
+	// Log error
 	if err != nil {
 		rsc.logger.Error("error processing redis streams message", "stream", rsc.streamName, "consumer group", rsc.consumerGroup, "consumer name", rsc.consumerName, "message", message, "error", err)
 	}
