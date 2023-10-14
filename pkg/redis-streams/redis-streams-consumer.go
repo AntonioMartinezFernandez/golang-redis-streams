@@ -9,7 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/AntonioMartinezFernandez/golang-redis-streams/pkg/utils"
+	pkg_domain "github.com/AntonioMartinezFernandez/golang-redis-streams/pkg/domain"
+	pkg_utils "github.com/AntonioMartinezFernandez/golang-redis-streams/pkg/utils"
+
 	"github.com/redis/go-redis/v9"
 )
 
@@ -20,7 +22,7 @@ var _ Consumer = (*RedisStreamsConsumer)(nil)
 type Consumer interface {
 	Start()
 	Stop()
-	RegisterSubscriber(subscriber RedisStreamsSubscriber)
+	RegisterHandler(handler pkg_domain.DomainMessageHandler)
 }
 
 type RedisStreamsConsumer struct {
@@ -32,7 +34,7 @@ type RedisStreamsConsumer struct {
 	consumerGroup string
 	streamName    string
 	isStarted     bool
-	subscribers   []RedisStreamsSubscriber
+	handlers      []pkg_domain.DomainMessageHandler
 }
 
 func NewRedisStreamsConsumer(
@@ -48,7 +50,7 @@ func NewRedisStreamsConsumer(
 		wg:            wg,
 		logger:        logger,
 		client:        client,
-		consumerName:  utils.NewUlid(),
+		consumerName:  pkg_utils.NewUlid(),
 		consumerGroup: consumerGroup,
 		streamName:    streamName,
 		isStarted:     false,
@@ -65,8 +67,8 @@ func (rsc *RedisStreamsConsumer) CreateConsumerGroup() {
 	}
 }
 
-func (rsc *RedisStreamsConsumer) RegisterSubscriber(subscriber RedisStreamsSubscriber) {
-	rsc.subscribers = append(rsc.subscribers, subscriber)
+func (rsc *RedisStreamsConsumer) RegisterHandler(handler pkg_domain.DomainMessageHandler) {
+	rsc.handlers = append(rsc.handlers, handler)
 }
 
 func (rsc *RedisStreamsConsumer) Stop() {
@@ -108,7 +110,7 @@ func (rsc *RedisStreamsConsumer) Start() {
 
 			for _, message := range streams[0].Messages {
 				rsc.wg.Add(1)
-				go rsc.processStream(message)
+				go rsc.processMessage(message)
 			}
 			rsc.wg.Wait()
 		}()
@@ -160,16 +162,16 @@ func (rsc *RedisStreamsConsumer) consumePendingMessages() {
 
 		for _, message := range messages {
 			rsc.wg.Add(1)
-			go rsc.processStream(message)
+			go rsc.processMessage(message)
 		}
 		rsc.wg.Wait()
 	}
 }
 
-func (rsc *RedisStreamsConsumer) processStream(message redis.XMessage) {
+func (rsc *RedisStreamsConsumer) processMessage(message redis.XMessage) {
 	defer rsc.wg.Done()
 
-	err := rsc.processMessage(message)
+	err := rsc.handleMessage(message)
 	if err != nil {
 		rsc.logger.Error("error processing redis streams message", "stream", rsc.streamName, "consumer group", rsc.consumerGroup, "consumer name", rsc.consumerName, "message", message, "error", err)
 	}
@@ -181,21 +183,33 @@ func (rsc *RedisStreamsConsumer) processStream(message redis.XMessage) {
 	rsc.client.XDel(rsc.ctx, rsc.streamName, message.ID)
 }
 
-func (rsc *RedisStreamsConsumer) processMessage(msg redis.XMessage) error {
-	// Retrieve "type" field from message
-	msgType, ok := msg.Values["base_stream_type"].(string)
+func (rsc *RedisStreamsConsumer) handleMessage(msg redis.XMessage) error {
+	// Retrieve "type" value from message
+	msgType, ok := msg.Values["type"].(string)
 	if !ok {
-		return errors.New("trying to process an invalid redis streams message")
+		return errors.New("error retrieving type from redis streams message")
 	}
 
-	rsc.logger.Debug("processing redis streams message", "type", msgType, "message", msg.Values)
+	// Retrieve "data" value from message
+	msgDataAsString, ok := msg.Values["data"].(string)
+	if !ok {
+		return errors.New("error retrieving data from redis streams message")
+	}
 
-	for _, subscriber := range rsc.subscribers {
-		if subscriber.MessageTypeName() == msgType {
-			streamEvent := subscriber.NewStreamEventFromMap(msg.Values)
-			err := subscriber.Handle(streamEvent)
+	msgDataAsMap := pkg_utils.JsonStrToMap(msgDataAsString)
+
+	rsc.logger.Debug("handling message from redis stream", "type", msgType, "message", msgDataAsMap)
+
+	for _, handler := range rsc.handlers {
+		if handler.MessageType() == msgType {
+			domainMessage, err := handler.NewDomainMessageFromMap(msgDataAsMap)
 			if err != nil {
 				return err
+			}
+
+			handleErr := handler.Handle(domainMessage)
+			if handleErr != nil {
+				return handleErr
 			}
 		}
 	}

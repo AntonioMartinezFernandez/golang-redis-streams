@@ -2,10 +2,9 @@ package comment_domain
 
 import (
 	"errors"
-	"strconv"
 	"time"
 
-	"github.com/AntonioMartinezFernandez/golang-redis-streams/pkg/utils"
+	pkg_utils "github.com/AntonioMartinezFernandez/golang-redis-streams/pkg/utils"
 )
 
 type Comment struct {
@@ -13,6 +12,22 @@ type Comment struct {
 	userId    string
 	comment   string
 	createdAt time.Time
+}
+
+func (c *Comment) Id() string {
+	return c.id
+}
+
+func (c *Comment) UserId() string {
+	return c.userId
+}
+
+func (c *Comment) Comment() string {
+	return c.comment
+}
+
+func (c *Comment) CreatedAt() time.Time {
+	return c.createdAt
 }
 
 func NewComment(id string, userId string, comment string, createdAt time.Time) (*Comment, error) {
@@ -24,44 +39,35 @@ func NewComment(id string, userId string, comment string, createdAt time.Time) (
 	}, nil
 }
 
-func NewFromMap(e map[string]interface{}) (*Comment, error) {
-	id, ok := utils.GetMapValue("id", e).(string)
+func NewCommentFromMap(e map[string]interface{}) (*Comment, error) {
+	attributes, ok := pkg_utils.GetMapValue("attributes", e).(map[string]interface{})
+	if !ok {
+		return nil, errors.New("invalid attributes")
+	}
+
+	id, ok := pkg_utils.GetMapValue("id", attributes).(string)
 	if !ok {
 		return nil, errors.New("invalid id")
 	}
-	userId, ok := utils.GetMapValue("user_id", e).(string)
+	userId, ok := pkg_utils.GetMapValue("user_id", attributes).(string)
 	if !ok {
 		return nil, errors.New("invalid user id")
 	}
-	comment, ok := utils.GetMapValue("comment", e).(string)
+	comment, ok := pkg_utils.GetMapValue("comment", attributes).(string)
 	if !ok {
 		return nil, errors.New("invalid comment")
 	}
-	createdAt, ok := utils.GetMapValue("created_at", e).(string)
+
+	metadata, ok := pkg_utils.GetMapValue("metadata", e).(map[string]interface{})
+	if !ok {
+		return nil, errors.New("invalid metadata")
+	}
+
+	createdAtAsFloat, ok := pkg_utils.GetMapValue("created_at", metadata).(float64)
 	if !ok {
 		return nil, errors.New("invalid created at")
 	}
-	createdAtAsInt, err := strconv.Atoi(createdAt)
-	if err != nil {
-		return nil, errors.New("invalid created at")
-	}
-	createdAtAsTime := time.UnixMilli(int64(createdAtAsInt))
+	createdAtAsTime := time.UnixMilli(int64(createdAtAsFloat))
 
 	return NewComment(id, userId, comment, createdAtAsTime)
-}
-
-func (c *Comment) GetId() string {
-	return c.id
-}
-
-func (c *Comment) GetUserId() string {
-	return c.userId
-}
-
-func (c *Comment) GetComment() string {
-	return c.comment
-}
-
-func (c *Comment) GetCreatedAt() time.Time {
-	return c.createdAt
 }

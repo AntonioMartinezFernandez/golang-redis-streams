@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 
-	redis_streams "github.com/AntonioMartinezFernandez/golang-redis-streams/pkg/redis-streams"
+	pkg_domain "github.com/AntonioMartinezFernandez/golang-redis-streams/pkg/domain"
 )
 
-var _ redis_streams.RedisStreamsSubscriber = (*SaveLikeOnLikeCreated)(nil)
+var _ pkg_domain.DomainMessageHandler = (*SaveLikeOnLikeCreated)(nil)
 
 type SaveLikeOnLikeCreated struct {
 }
@@ -16,22 +16,22 @@ func NewSaveLikeOnLikeCreated() *SaveLikeOnLikeCreated {
 	return &SaveLikeOnLikeCreated{}
 }
 
-func (slolc *SaveLikeOnLikeCreated) MessageTypeName() string {
-	return LikeCreatedStreamType
+func (slolc *SaveLikeOnLikeCreated) MessageType() string {
+	return LikeCreatedMessageType
 }
 
-func (slolc *SaveLikeOnLikeCreated) NewStreamEventFromMap(eventAsMap map[string]interface{}) redis_streams.StreamToPublish {
-	likeCreated, err := NewLikeCreatedStreamFromMap(eventAsMap)
+func (slolc *SaveLikeOnLikeCreated) NewDomainMessageFromMap(messageAsMap map[string]interface{}) (pkg_domain.DomainMessage, error) {
+	likeCreated, err := NewLikeCreatedMessageFromMap(messageAsMap)
 	if err != nil {
-		return nil
+		return nil, err
 	}
-	return likeCreated
+	return likeCreated, nil
 }
 
-func (slolc *SaveLikeOnLikeCreated) Handle(event interface{}) error {
-	likeCreated, ok := event.(*LikeCreatedStream)
+func (slolc *SaveLikeOnLikeCreated) Handle(message interface{}) error {
+	likeCreated, ok := message.(*LikeCreatedMessage)
 	if !ok {
-		return errors.New("event cannot be casted as LikeCreatedStream")
+		return errors.New("message cannot be casted as LikeCreatedMessage")
 	}
 
 	fmt.Println("Running SaveLikeOnLikeCreated handler for like with id", likeCreated.Id)
