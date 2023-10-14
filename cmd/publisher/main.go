@@ -36,7 +36,7 @@ func main() {
 	var msg_counter uint32 = 0
 	startTime := time.Now()
 	commentIds := []string{}
-	messagesToPublishByType := 5000
+	messagesToPublishByType := 50
 
 	// Publish CommentCreated messages
 	for i := 1; i <= messagesToPublishByType; i++ {

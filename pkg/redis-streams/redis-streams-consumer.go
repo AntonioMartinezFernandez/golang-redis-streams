@@ -44,7 +44,7 @@ func NewRedisStreamsConsumer(
 	logger *slog.Logger,
 	client *redis.Client,
 	consumerGroup string,
-	streamName string,
+	eventName string,
 ) *RedisStreamsConsumer {
 	return &RedisStreamsConsumer{
 		ctx:           ctx,
@@ -53,7 +53,7 @@ func NewRedisStreamsConsumer(
 		client:        client,
 		consumerName:  pkg_utils.NewUlid(),
 		consumerGroup: consumerGroup,
-		streamName:    streamName,
+		streamName:    StreamName(eventName),
 		isStarted:     false,
 	}
 }
