@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 
-	redis_streams "github.com/AntonioMartinezFernandez/golang-redis-streams/pkg/redis-streams"
+	pkg_domain "github.com/AntonioMartinezFernandez/golang-redis-streams/pkg/domain"
 )
 
-var _ redis_streams.RedisStreamsSubscriber = (*SaveCommentOnCommentCreated)(nil)
+var _ pkg_domain.DomainMessageHandler = (*SaveCommentOnCommentCreated)(nil)
 
 type SaveCommentOnCommentCreated struct {
 }
@@ -16,22 +16,22 @@ func NewSaveCommentOnCommentCreated() *SaveCommentOnCommentCreated {
 	return &SaveCommentOnCommentCreated{}
 }
 
-func (scocc *SaveCommentOnCommentCreated) MessageTypeName() string {
-	return CommentCreatedStreamType
+func (scocc *SaveCommentOnCommentCreated) MessageType() string {
+	return CommentCreatedMessageType
 }
 
-func (scocc *SaveCommentOnCommentCreated) NewStreamEventFromMap(eventAsMap map[string]interface{}) redis_streams.StreamToPublish {
-	commentCreated, err := NewCommentCreatedStreamFromMap(eventAsMap)
+func (scocc *SaveCommentOnCommentCreated) NewDomainMessageFromMap(messageAsMap map[string]interface{}) (pkg_domain.DomainMessage, error) {
+	commentCreated, err := NewCommentCreatedMessageFromMap(messageAsMap)
 	if err != nil {
-		return nil
+		return nil, err
 	}
-	return commentCreated
+	return commentCreated, nil
 }
 
-func (scocc *SaveCommentOnCommentCreated) Handle(event interface{}) error {
-	commentCreated, ok := event.(*CommentCreatedStream)
+func (scocc *SaveCommentOnCommentCreated) Handle(message interface{}) error {
+	commentCreated, ok := message.(*CommentCreatedMessage)
 	if !ok {
-		return errors.New("event cannot be casted as CommentCreatedStream")
+		return errors.New("message cannot be casted as CommentCreatedMessage")
 	}
 
 	fmt.Println("Running SaveCommentOnCommentCreated handler for comment with id", commentCreated.Id)

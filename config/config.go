@@ -2,7 +2,6 @@ package config
 
 import (
 	"context"
-	"os"
 
 	"github.com/joho/godotenv"
 	"github.com/sethvargo/go-envconfig"
@@ -21,26 +20,9 @@ type Config struct {
 }
 
 func LoadEnvConfig() Config {
-	goDotEnvVariableString("APP_ENV")
-	goDotEnvVariableString("APP_VERSION")
-
-	goDotEnvVariableString("LOG_LEVEL")
-
-	goDotEnvVariableString("REDIS_HOST")
-	goDotEnvVariableString("REDIS_PORT")
-
-	goDotEnvVariableString("CONSUMER_GROUP")
-
-	return buildConfig()
-}
-
-func goDotEnvVariableString(key string) string {
-	godotenv.Load(".env")
-	return os.Getenv(key)
-}
-
-func buildConfig() Config {
 	var config Config
+
+	godotenv.Load(".env")
 	ctx := context.Background()
 	if err := envconfig.Process(ctx, &config); err != nil {
 		panic(err)

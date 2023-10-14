@@ -9,9 +9,10 @@ import (
 	"syscall"
 
 	config "github.com/AntonioMartinezFernandez/golang-redis-streams/config"
-	slogger "github.com/AntonioMartinezFernandez/golang-redis-streams/pkg/logger"
-	redis_streams "github.com/AntonioMartinezFernandez/golang-redis-streams/pkg/redis-streams"
-	utils "github.com/AntonioMartinezFernandez/golang-redis-streams/pkg/utils"
+
+	pkg_logger "github.com/AntonioMartinezFernandez/golang-redis-streams/pkg/logger"
+	pkg_redis_streams "github.com/AntonioMartinezFernandez/golang-redis-streams/pkg/redis-streams"
+	pkg_utils "github.com/AntonioMartinezFernandez/golang-redis-streams/pkg/utils"
 
 	comment_application "github.com/AntonioMartinezFernandez/golang-redis-streams/internal/comment/application"
 	like_application "github.com/AntonioMartinezFernandez/golang-redis-streams/internal/like/application"
@@ -23,52 +24,62 @@ var (
 	ctx           context.Context
 	wg            sync.WaitGroup
 	env_vars      config.Config
-	client        *redis.Client
+	redisClient   *redis.Client
 	consumerGroup string
 	logger        *slog.Logger
 )
 
 func init() {
-	ctx = context.Background()
-	env_vars = config.LoadEnvConfig()
-	consumerGroup = env_vars.ConsumerGroup
-
-	// Init logger
-	logger = slogger.NewLogger(env_vars.LogLevel)
-
-	// Init Redis client
-	var err error
-	client, err = utils.NewRedisClient(env_vars.RedisHost, env_vars.RedisPort)
-	if err != nil {
-		panic(err)
-	}
+	InitDependencies()
 }
 
 func main() {
-	// Init Redis Stream consumer for CommentCreated streams
-	commentCreatedStreamName := comment_application.CommentCreatedStreamType
-	comment_created_rsc := redis_streams.NewRedisStreamsConsumer(ctx, &wg, logger, client, consumerGroup, commentCreatedStreamName)
-	comment_created_rsc.RegisterSubscriber(comment_application.NewSaveCommentOnCommentCreated())
-	comment_created_rsc.CreateConsumerGroup()
-	go comment_created_rsc.Start()
-	go comment_created_rsc.StartPendingMessagesConsumer(60)
+	// Init Redis Stream consumer for CommentCreated messages
+	commentCreatedMessageName := comment_application.CommentCreatedMessageType
+	commentCreatedMessageHandler := comment_application.NewSaveCommentOnCommentCreated()
 
-	// Init Redis Stream consumer for LikeCreated streams
-	likeCreatedStreamName := like_application.LikeCreatedStreamType
-	like_created_rsc := redis_streams.NewRedisStreamsConsumer(ctx, &wg, logger, client, consumerGroup, likeCreatedStreamName)
-	like_created_rsc.RegisterSubscriber(like_application.NewSaveLikeOnLikeCreated())
-	like_created_rsc.CreateConsumerGroup()
-	go like_created_rsc.Start()
-	go like_created_rsc.StartPendingMessagesConsumer(60)
+	commentCreatedMessagesConsumer := pkg_redis_streams.NewRedisStreamsConsumer(ctx, &wg, logger, redisClient, consumerGroup, commentCreatedMessageName)
+	commentCreatedMessagesConsumer.RegisterHandler(commentCreatedMessageHandler)
+	commentCreatedMessagesConsumer.CreateConsumerGroup()
+
+	go commentCreatedMessagesConsumer.Start()
+	go commentCreatedMessagesConsumer.StartPendingMessagesConsumer(60)
+
+	// Init Redis Stream consumer for LikeCreated messages
+	likeCreatedMessageName := like_application.LikeCreatedMessageType
+	saveLikeOnLikeCreatedHandler := like_application.NewSaveLikeOnLikeCreated()
+
+	likeCreatedMessagesConsumer := pkg_redis_streams.NewRedisStreamsConsumer(ctx, &wg, logger, redisClient, consumerGroup, likeCreatedMessageName)
+	likeCreatedMessagesConsumer.RegisterHandler(saveLikeOnLikeCreatedHandler)
+	likeCreatedMessagesConsumer.CreateConsumerGroup()
+
+	go likeCreatedMessagesConsumer.Start()
+	go likeCreatedMessagesConsumer.StartPendingMessagesConsumer(60)
 
 	//Gracefully shutdown
 	chanOS := make(chan os.Signal, 1)
 	signal.Notify(chanOS, syscall.SIGINT, syscall.SIGTERM)
 
 	<-chanOS
-	comment_created_rsc.Stop()
-	like_created_rsc.Stop()
+	commentCreatedMessagesConsumer.Stop()
+	likeCreatedMessagesConsumer.Stop()
 
 	wg.Wait()
-	client.Close()
+	redisClient.Close()
+}
+
+func InitDependencies() {
+	ctx = context.Background()
+	env_vars = config.LoadEnvConfig()
+	consumerGroup = env_vars.ConsumerGroup
+
+	// Init logger
+	logger = pkg_logger.NewLogger(env_vars.LogLevel)
+
+	// Init Redis client
+	var err error
+	redisClient, err = pkg_utils.NewRedisClient(env_vars.RedisHost, env_vars.RedisPort, "")
+	if err != nil {
+		panic(err)
+	}
 }

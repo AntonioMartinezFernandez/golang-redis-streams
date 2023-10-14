@@ -2,15 +2,18 @@ package redis_streams
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 
 	"github.com/redis/go-redis/v9"
+
+	pkg_domain "github.com/AntonioMartinezFernandez/golang-redis-streams/pkg/domain"
 )
 
 var _ Publisher = (*RedisStreamsPublisher)(nil)
 
 type Publisher interface {
-	Publish(streamName string, event StreamToPublish) error
+	Publish(domainMessage pkg_domain.DomainMessage) error
 }
 
 type RedisStreamsPublisher struct {
@@ -31,18 +34,29 @@ func NewRedisStreamsPublisher(
 	}
 }
 
-func (rse *RedisStreamsPublisher) Publish(streamName string, event StreamToPublish) error {
-	eventAsMap := event.AsMap()
+func (rsp *RedisStreamsPublisher) Publish(domainMessage pkg_domain.DomainMessage) error {
+	messageAsMap := domainMessage.AsMap()
+	messageAsBytes, err := json.Marshal(messageAsMap)
+	if err != nil {
+		return err
+	}
+	messageAsString := string(messageAsBytes)
 
-	timestampId, err := rse.client.XAdd(rse.ctx, &redis.XAddArgs{
+	streamName := domainMessage.GetType()
+	streamValues := map[string]interface{}{
+		"type": domainMessage.GetType(),
+		"data": messageAsString,
+	}
+
+	streamMessageId, err := rsp.client.XAdd(rsp.ctx, &redis.XAddArgs{
 		Stream: streamName,
-		Values: eventAsMap,
+		Values: streamValues,
 	}).Result()
 
 	if err != nil {
-		rse.logger.Error("error pusblishing redis streams event", "error", err)
+		rsp.logger.Error("error pusblishing redis streams message", "error", err)
 	} else {
-		rse.logger.Debug("redis streams event published succesfully", "event", event, "redis_timestamp_id", timestampId)
+		rsp.logger.Debug("redis streams message published succesfully", "message", domainMessage, "stream_message_id", streamMessageId)
 	}
 
 	return err
