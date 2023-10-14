@@ -42,7 +42,7 @@ func (rsp *RedisStreamsPublisher) Publish(domainMessage pkg_domain.DomainMessage
 	}
 	messageAsString := string(messageAsBytes)
 
-	streamName := domainMessage.GetType()
+	streamName := StreamName(domainMessage.GetType())
 	streamValues := map[string]interface{}{
 		"type": domainMessage.GetType(),
 		"data": messageAsString,

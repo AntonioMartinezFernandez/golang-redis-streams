@@ -10,7 +10,7 @@ import (
 
 var _ pkg_domain.DomainMessage = (*CommentCreatedMessage)(nil)
 
-const CommentCreatedMessageType string = "CommentCreated"
+const CommentCreatedMessageType string = "comment-created"
 
 type CommentCreatedMessageAttributes struct {
 	Id      string `json:"id"`

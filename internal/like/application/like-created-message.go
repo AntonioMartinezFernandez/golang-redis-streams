@@ -10,7 +10,7 @@ import (
 
 var _ pkg_domain.DomainMessage = (*LikeCreatedMessage)(nil)
 
-const LikeCreatedMessageType string = "LikeCreated"
+const LikeCreatedMessageType string = "like-created"
 
 type LikeCreatedMessageAttributes struct {
 	Id        string `json:"id"`
