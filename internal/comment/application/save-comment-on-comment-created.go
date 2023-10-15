@@ -34,7 +34,7 @@ func (scocc *SaveCommentOnCommentCreated) Handle(message interface{}) error {
 		return errors.New("message cannot be casted as CommentCreatedMessage")
 	}
 
-	fmt.Println("Running SaveCommentOnCommentCreated handler for comment with id", commentCreated.Id)
+	fmt.Printf("Running SaveCommentOnCommentCreated handler for comment %s with id %s\n", commentCreated.Attributes.Comment, commentCreated.Attributes.Id)
 
 	return nil
 }

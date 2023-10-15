@@ -2,10 +2,13 @@ package comment_application
 
 import (
 	"encoding/json"
+	"errors"
+	"time"
 
 	comment_domain "github.com/AntonioMartinezFernandez/golang-redis-streams/internal/comment/domain"
 
 	pkg_domain "github.com/AntonioMartinezFernandez/golang-redis-streams/pkg/domain"
+	pkg_utils "github.com/AntonioMartinezFernandez/golang-redis-streams/pkg/utils"
 )
 
 var _ pkg_domain.DomainMessage = (*CommentCreatedMessage)(nil)
@@ -13,9 +16,10 @@ var _ pkg_domain.DomainMessage = (*CommentCreatedMessage)(nil)
 const CommentCreatedMessageType string = "comment-created"
 
 type CommentCreatedMessageAttributes struct {
-	Id      string `json:"id"`
-	UserId  string `json:"user_id"`
-	Comment string `json:"comment"`
+	Id        string `json:"id"`
+	UserId    string `json:"user_id"`
+	Comment   string `json:"comment"`
+	CreatedAt int64  `json:"created_at"`
 }
 
 type CommentCreatedMessageMetadata struct {
@@ -36,18 +40,42 @@ func NewCommentCreatedMessage(comment *comment_domain.Comment) *CommentCreatedMe
 		DomainMessageBase: DomainMessageBase,
 
 		Attributes: CommentCreatedMessageAttributes{
-			Id:      comment.Id(),
-			UserId:  comment.UserId(),
-			Comment: comment.Comment(),
+			Id:        comment.Id(),
+			UserId:    comment.UserId(),
+			Comment:   comment.Comment(),
+			CreatedAt: comment.CreatedAt().UnixMilli(),
 		},
 		Metadata: CommentCreatedMessageMetadata{
-			CreatedAt: comment.CreatedAt().UnixMilli(),
+			CreatedAt: time.Now().UnixMilli(),
 		},
 	}
 }
 
-func NewCommentCreatedMessageFromMap(stream map[string]interface{}) (*CommentCreatedMessage, error) {
-	newComment, err := comment_domain.NewCommentFromMap(stream)
+func NewCommentCreatedMessageFromMap(messageAsMap map[string]interface{}) (*CommentCreatedMessage, error) {
+	attributes, ok := pkg_utils.GetMapValue("attributes", messageAsMap).(map[string]interface{})
+	if !ok {
+		return nil, errors.New("invalid attributes")
+	}
+
+	id, ok := pkg_utils.GetMapValue("id", attributes).(string)
+	if !ok {
+		return nil, errors.New("invalid id")
+	}
+	userId, ok := pkg_utils.GetMapValue("user_id", attributes).(string)
+	if !ok {
+		return nil, errors.New("invalid user id")
+	}
+	comment, ok := pkg_utils.GetMapValue("comment", attributes).(string)
+	if !ok {
+		return nil, errors.New("invalid comment")
+	}
+	createdAtAsFloat, ok := pkg_utils.GetMapValue("created_at", attributes).(float64)
+	if !ok {
+		return nil, errors.New("invalid created at")
+	}
+	createdAtAsTime := time.UnixMilli(int64(createdAtAsFloat))
+
+	newComment, err := comment_domain.NewComment(id, userId, comment, createdAtAsTime)
 	if err != nil {
 		return nil, err
 	}

@@ -1,10 +1,7 @@
 package like
 
 import (
-	"errors"
 	"time"
-
-	pkg_utils "github.com/AntonioMartinezFernandez/golang-redis-streams/pkg/utils"
 )
 
 type Like struct {
@@ -37,39 +34,4 @@ func (l *Like) CommentId() string {
 
 func (l *Like) CreatedAt() time.Time {
 	return l.createdAt
-}
-
-func NewLikeFromMap(e map[string]interface{}) (*Like, error) {
-	attributes, ok := pkg_utils.GetMapValue("attributes", e).(map[string]interface{})
-	if !ok {
-		return nil, errors.New("invalid attributes")
-	}
-
-	id, ok := pkg_utils.GetMapValue("id", attributes).(string)
-	if !ok {
-		return nil, errors.New("invalid id")
-	}
-
-	userId, ok := pkg_utils.GetMapValue("user_id", attributes).(string)
-	if !ok {
-		return nil, errors.New("invalid user id")
-	}
-
-	commentId, ok := pkg_utils.GetMapValue("comment_id", attributes).(string)
-	if !ok {
-		return nil, errors.New("invalid comment")
-	}
-
-	metadata, ok := pkg_utils.GetMapValue("metadata", e).(map[string]interface{})
-	if !ok {
-		return nil, errors.New("invalid metadata")
-	}
-
-	createdAtAsFloat, ok := pkg_utils.GetMapValue("created_at", metadata).(float64)
-	if !ok {
-		return nil, errors.New("invalid created at")
-	}
-	createdAtAsTime := time.UnixMilli(int64(createdAtAsFloat))
-
-	return NewLike(id, userId, commentId, createdAtAsTime)
 }

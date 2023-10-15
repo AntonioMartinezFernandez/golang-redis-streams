@@ -34,7 +34,7 @@ func (slolc *SaveLikeOnLikeCreated) Handle(message interface{}) error {
 		return errors.New("message cannot be casted as LikeCreatedMessage")
 	}
 
-	fmt.Println("Running SaveLikeOnLikeCreated handler for like with id", likeCreated.Id)
+	fmt.Printf("Running SaveLikeOnLikeCreated handler for like id %s and comment id %s\n", likeCreated.Attributes.Id, likeCreated.Attributes.CommentId)
 
 	return nil
 }

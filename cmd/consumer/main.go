@@ -35,21 +35,21 @@ func init() {
 
 func main() {
 	// Init Redis Stream consumer for CommentCreated messages
-	commentCreatedMessageName := comment_application.CommentCreatedMessageType
-	commentCreatedMessageHandler := comment_application.NewSaveCommentOnCommentCreated()
+	commentCreatedMessageType := comment_application.CommentCreatedMessageType
+	saveCommentOnCommentCreatedHandler := comment_application.NewSaveCommentOnCommentCreated()
 
-	commentCreatedMessagesConsumer := pkg_redis_streams.NewRedisStreamsConsumer(ctx, &wg, logger, redisClient, consumerGroup, commentCreatedMessageName)
-	commentCreatedMessagesConsumer.RegisterHandler(commentCreatedMessageHandler)
+	commentCreatedMessagesConsumer := pkg_redis_streams.NewRedisStreamsConsumer(ctx, &wg, logger, redisClient, consumerGroup, commentCreatedMessageType)
+	commentCreatedMessagesConsumer.RegisterHandler(saveCommentOnCommentCreatedHandler)
 	commentCreatedMessagesConsumer.CreateConsumerGroup()
 
 	go commentCreatedMessagesConsumer.Start()
 	go commentCreatedMessagesConsumer.StartPendingMessagesConsumer(60)
 
 	// Init Redis Stream consumer for LikeCreated messages
-	likeCreatedMessageName := like_application.LikeCreatedMessageType
+	likeCreatedMessageType := like_application.LikeCreatedMessageType
 	saveLikeOnLikeCreatedHandler := like_application.NewSaveLikeOnLikeCreated()
 
-	likeCreatedMessagesConsumer := pkg_redis_streams.NewRedisStreamsConsumer(ctx, &wg, logger, redisClient, consumerGroup, likeCreatedMessageName)
+	likeCreatedMessagesConsumer := pkg_redis_streams.NewRedisStreamsConsumer(ctx, &wg, logger, redisClient, consumerGroup, likeCreatedMessageType)
 	likeCreatedMessagesConsumer.RegisterHandler(saveLikeOnLikeCreatedHandler)
 	likeCreatedMessagesConsumer.CreateConsumerGroup()
 
