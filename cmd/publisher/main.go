@@ -4,6 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 	"time"
 
 	config "github.com/AntonioMartinezFernandez/golang-redis-streams/config"
@@ -23,6 +27,7 @@ import (
 var (
 	env_vars              config.Config
 	ctx                   context.Context
+	wg                    sync.WaitGroup
 	redisClient           *redis.Client
 	redisStreamsPublisher *pkg_redis_streams.RedisStreamsPublisher
 	logger                *slog.Logger
@@ -33,12 +38,16 @@ func init() {
 }
 
 func main() {
+	redisStreamsPublisher.Start()
+
 	var msg_counter uint32 = 0
+	var delayed_msg_counter uint32 = 0
+
 	startTime := time.Now()
 	commentIds := []string{}
-	messagesToPublishByType := 50
+	messagesToPublishByType := 50000
 
-	// Publish CommentCreated messages
+	// Publish INSTANT CommentCreated messages
 	for i := 1; i <= messagesToPublishByType; i++ {
 		commentId := pkg_utils.NewUuid()
 		userId := fmt.Sprint(i)
@@ -50,12 +59,15 @@ func main() {
 		comment, _ := comment_domain.NewComment(commentId, userId, commentMsg, now)
 
 		CommentCreatedMessage := comment_application.NewCommentCreatedMessage(comment)
-		_ = redisStreamsPublisher.Publish(CommentCreatedMessage)
+		err := redisStreamsPublisher.Publish(CommentCreatedMessage)
+		if err != nil {
+			logger.Error("error publishing delayed message through redis streams ", "error", err)
+		}
 
 		msg_counter++
 	}
 
-	// Publish LikeCreated messages
+	// Publish 5 seconds DELAYED LikeCreated messages
 	for i := 1; i <= messagesToPublishByType; i++ {
 		likeId := pkg_utils.NewUuid()
 		userId := fmt.Sprint(i)
@@ -65,12 +77,27 @@ func main() {
 		like, _ := like_domain.NewLike(likeId, userId, commentId, now)
 
 		LikeCreatedMessage := like_application.NewLikeCreatedMessage(like)
-		_ = redisStreamsPublisher.Publish(LikeCreatedMessage)
+		err := redisStreamsPublisher.PublishDelayed(LikeCreatedMessage, 5)
+		if err != nil {
+			logger.Error("error publishing delayed message through redis streams ", "error", err)
+		}
 
-		msg_counter++
+		delayed_msg_counter++
 	}
 
-	fmt.Printf("Published %d messages in %s\n", msg_counter, time.Since(startTime))
+	fmt.Printf("Published %d messages\n", msg_counter)
+	fmt.Printf("Published %d delayed messages\n", delayed_msg_counter)
+	fmt.Printf("Processed in %s\n", time.Since(startTime))
+
+	//Gracefully shutdown
+	chanOS := make(chan os.Signal, 1)
+	signal.Notify(chanOS, syscall.SIGINT, syscall.SIGTERM)
+
+	<-chanOS
+	redisStreamsPublisher.Stop()
+
+	wg.Wait()
+	redisClient.Close()
 }
 
 func InitDependencies() {
@@ -88,5 +115,5 @@ func InitDependencies() {
 	}
 
 	// Init Redis Streams publisher
-	redisStreamsPublisher = pkg_redis_streams.NewRedisStreamsPublisher(ctx, redisClient, logger)
+	redisStreamsPublisher = pkg_redis_streams.NewRedisStreamsPublisher(ctx, &wg, redisClient, logger)
 }

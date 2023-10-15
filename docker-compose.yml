@@ -6,6 +6,7 @@ services:
     container_name: redis-srv
     ports:
       - 6379:6379
+    restart: unless-stopped
 
   consumer_one:
     container_name: go-consumer-one
@@ -21,7 +22,7 @@ services:
       CONSUMER_GROUP: consumer-group-one
     depends_on:
       - redis
-    restart: always
+    restart: unless-stopped
 
   consumer_two:
     container_name: go-consumer-two
@@ -34,10 +35,10 @@ services:
       LOG_LEVEL: debug
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      CONSUMER_GROUP: consumer-group-two
+      CONSUMER_GROUP: consumer-group-one
     depends_on:
       - redis
-    restart: always
+    restart: unless-stopped
 
   consumer_three:
     container_name: go-consumer-three
@@ -53,10 +54,26 @@ services:
       CONSUMER_GROUP: consumer-group-two
     depends_on:
       - redis
-    restart: always
+    restart: unless-stopped
 
-  publisher:
-    container_name: go-publisher
+  consumer_four:
+    container_name: go-consumer-four
+    build:
+      dockerfile: ./Dockerfile.consumer
+      context: .
+    environment:
+      APP_ENV: docker
+      APP_VERSION: 1.0.0
+      LOG_LEVEL: debug
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CONSUMER_GROUP: consumer-group-two
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  publisher_one:
+    container_name: go-publisher-one
     build:
       dockerfile: ./Dockerfile.publisher
       context: .
@@ -70,4 +87,20 @@ services:
       - consumer_one
       - consumer_two
       - consumer_three
+      - consumer_four
+    restart: no
+
+  publisher_two:
+    container_name: go-publisher-two
+    build:
+      dockerfile: ./Dockerfile.publisher
+      context: .
+    environment:
+      APP_ENV: docker
+      APP_VERSION: 1.0.0
+      LOG_LEVEL: debug
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      - publisher_one
     restart: no
